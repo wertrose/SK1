@@ -327,7 +327,7 @@
 
     document.querySelectorAll('[data-role="demo-btn"]').forEach((el) => {
       el.disabled = !state.hasSample;
-      el.textContent = state.isPlayingDemo ? '■ STOP' : '▶ DEMO';
+      el.textContent = state.isPlayingDemo ? '■ STOP' : 'DEMO';
       el.classList.toggle('active', state.isPlayingDemo);
     });
 

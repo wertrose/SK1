@@ -180,10 +180,10 @@ button:disabled {
   border: 1px solid var(--panel-inner-border);
 }
 .demo-head {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   margin-bottom: 10px;
+}
+.demo-head .btn-demo {
+  width: 100%;
 }
 .btn-demo {
   background: var(--demo-inactive);
@@ -220,7 +220,7 @@ button:disabled {
 }
 
 .mini-btn {
-  width: 26px;
+  width: 40px;
   height: 22px;
   background: var(--btn-gray);
   color: var(--orange);
