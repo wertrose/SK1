@@ -104,6 +104,56 @@
     if (recorder && recorder.state === 'recording') recorder.stop();
   }
 
+  // Real hardware samplers trim the recorded buffer down to the actual sound
+  // instead of keeping the full recording window, so silent lead-in/lead-out
+  // doesn't get pitch-shifted and played back along with every note.
+  function trimSilence(buffer, ctx) {
+    const numChannels = buffer.numberOfChannels;
+    const length = buffer.length;
+    const channelsData = [];
+    let peak = 0;
+    for (let c = 0; c < numChannels; c++) {
+      const data = buffer.getChannelData(c);
+      channelsData.push(data);
+      for (let i = 0; i < length; i++) {
+        const abs = Math.abs(data[i]);
+        if (abs > peak) peak = abs;
+      }
+    }
+    if (peak === 0) return buffer;
+
+    const threshold = Math.max(0.01, peak * 0.04);
+
+    let start = 0;
+    findStart:
+    for (let i = 0; i < length; i++) {
+      for (let c = 0; c < numChannels; c++) {
+        if (Math.abs(channelsData[c][i]) > threshold) { start = i; break findStart; }
+      }
+    }
+
+    let end = length - 1;
+    findEnd:
+    for (let i = length - 1; i >= 0; i--) {
+      for (let c = 0; c < numChannels; c++) {
+        if (Math.abs(channelsData[c][i]) > threshold) { end = i; break findEnd; }
+      }
+    }
+
+    if (end <= start) return buffer;
+
+    const pad = Math.round(0.02 * buffer.sampleRate);
+    const trimStart = Math.max(0, start - pad);
+    const trimEnd = Math.min(length - 1, end + pad);
+    const trimLength = trimEnd - trimStart + 1;
+
+    const trimmed = ctx.createBuffer(numChannels, trimLength, buffer.sampleRate);
+    for (let c = 0; c < numChannels; c++) {
+      trimmed.getChannelData(c).set(channelsData[c].subarray(trimStart, trimStart + trimLength));
+    }
+    return trimmed;
+  }
+
   async function onRecordingStopped() {
     clearTimeout(recTimer);
     if (mediaStream) mediaStream.getTracks().forEach((t) => t.stop());
@@ -114,7 +164,9 @@
 
     try {
       const arrayBuf = await blob.arrayBuffer();
-      sampleBuffer = await ensureAudioCtx().decodeAudioData(arrayBuf);
+      const ctx = ensureAudioCtx();
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      sampleBuffer = trimSilence(decoded, ctx);
       state.isRecording = false;
       state.hasSample = true;
       state.statusText = 'SAMPLE READY';
