@@ -12,12 +12,15 @@
   const BLACK_SEMI = [1, 3, 6, 8, 10];
   const BLACK_AFTER_WHITE = [0, 1, 3, 4, 5]; // index of white key each black key sits after
 
-  // Original toy-tune melody: [semitone offset from base key, duration in beats]
+  // Original toy-march melody built around the classic "cuckoo call" (a
+  // descending minor third): [semitone offset from base key, duration in beats]
   const MELODY = [
-    [0, 1], [0, 1], [7, 1], [7, 1], [9, 1], [9, 1], [7, 2],
-    [5, 1], [5, 1], [4, 1], [4, 1], [2, 1], [2, 1], [0, 2],
-    [7, 1], [7, 1], [5, 1], [5, 1], [4, 1], [4, 1], [2, 2],
-    [0, 2],
+    [7, 1], [4, 1], [7, 1], [4, 1],
+    [0, 1], [2, 1], [4, 1], [5, 1], [7, 2],
+    [7, 1], [4, 1], [7, 1], [4, 1],
+    [7, 1], [5, 1], [4, 1], [2, 1], [0, 2],
+    [0, 1], [4, 1], [7, 1], [12, 1], [7, 2],
+    [7, 1], [4, 1], [0, 2],
   ];
 
   const state = {
@@ -165,6 +168,20 @@
     }
   }
 
+  function scheduleMelodyLoop() {
+    const beatMs = 60000 / state.tempo;
+    let t = 0;
+    MELODY.forEach(([semi, dur]) => {
+      const id = setTimeout(() => playSemitone(semi + state.demoPitch), t);
+      demoTimeouts.push(id);
+      t += dur * beatMs;
+    });
+    const loopId = setTimeout(() => {
+      if (state.isPlayingDemo) scheduleMelodyLoop();
+    }, t + 150);
+    demoTimeouts.push(loopId);
+  }
+
   function toggleDemo() {
     if (!state.hasSample) return;
     if (state.isPlayingDemo) { stopDemoPlayback(); return; }
@@ -173,19 +190,7 @@
     state.statusText = 'PLAYING DEMO';
     render();
 
-    const beatMs = 60000 / state.tempo;
-    let t = 0;
-    MELODY.forEach(([semi, dur]) => {
-      const id = setTimeout(() => playSemitone(semi + state.demoPitch), t);
-      demoTimeouts.push(id);
-      t += dur * beatMs;
-    });
-    const endId = setTimeout(() => {
-      state.isPlayingDemo = false;
-      state.statusText = state.hasSample ? 'SAMPLE READY' : 'PRESS SAMPLE TO RECORD';
-      render();
-    }, t + 150);
-    demoTimeouts.push(endId);
+    scheduleMelodyLoop();
   }
 
   function bumpTempo(delta) {
