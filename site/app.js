@@ -12,22 +12,25 @@
   const BLACK_SEMI = [1, 3, 6, 8, 10];
   const BLACK_AFTER_WHITE = [0, 1, 3, 4, 5]; // index of white key each black key sits after
 
-  // Melody transcribed from the user-supplied recording (tonic = 0, Bb major),
-  // quantized to beats: [semitone offset from base key, duration in beats]
+  // Melody transcribed from a clean reference recording of the Toy Symphony
+  // (tonic = 0, i.e. G), quantized to beats: [semitone offset from base key, duration in beats]
   const MELODY = [
-    [0, 1.25], [2, 0.25], [0, 1.25], [5, 0.5], [4, 0.75], [9, 0.5], [4, 0.5],
-    [5, 0.5], [4, 0.75], [2, 0.5], [2, 0.5], [2, 0.5], [0, 1.25], [0, 1],
-    [5, 0.5], [4, 0.25], [0, 0.5], [9, 0.25], [7, 0.75], [5, 0.5], [4, 0.75],
-    [5, 0.75], [5, 0.5], [11, 1.25], [0, 3.25], [9, 0.5], [4, 0.75], [2, 0.5],
-    [4, 0.75], [5, 0.25], [5, 0.25], [5, 0.5], [11, 0.75], [0, 0.75], [4, 1],
-    [4, 1.75], [7, 1], [11, 1],
+    [0, 1.5], [4, 0.75], [2, 0.25], [2, 2.75], [4, 1.25], [9, 2],
+    [5, 0.25], [4, 1], [2, 0.75], [3, 0.5], [7, 0.5], [11, 1.75],
+    [4, 0.5], [2, 3], [4, 1.25], [9, 0.5], [9, 0.5], [7, 0.75],
+    [5, 0.25], [4, 1.25], [2, 0.75], [2, 0.75], [0, 0.75], [7, 1],
+    [9, 0.75], [6, 0.25], [7, 0.5], [9, 1], [8, 0.75], [9, 1.75],
+    [5, 0.5], [9, 1], [2, 0.5], [4, 0.25], [3, 0.25], [7, 0.5],
+    [5, 0.5], [4, 1.75],
   ];
 
-  // Original backing parts (not from the recording) that keep playing under the
-  // sample so it stays "the star" while a rhythm section continues underneath.
-  const BASS_PATTERN = [[0, 1], [0, 1], [2, 1], [4, 1], [5, 1], [4, 1], [2, 1], [0, 1]];
-  const BASS_BEATS_PER_LOOP = 8;
-  const BASS_BASE_HZ = 116.54; // Bb2
+  // Backing parts inspired by the reference recording's own texture: the Toy
+  // Symphony is built on a continuous two-octave tonic drone (found by isolating
+  // the piece's two loudest, most sustained pitches), plus a light original
+  // percussion layer for "drums, etc." that keeps going while the sample leads.
+  const DRONE_PATTERN = [[0, 2], [0, 2], [0, 2], [0, 2]];
+  const DRONE_BEATS_PER_LOOP = 8;
+  const BASS_BASE_HZ = 98.0; // G2 (drone root, one octave below the recording's G3)
 
   const KICK_BEATS = [0, 2];
   const SNARE_BEATS = [1, 3];
@@ -74,19 +77,24 @@
     return noiseBuffer;
   }
 
-  function playBassNote(semi) {
+  function playDroneNote(semi, seconds) {
     const ctx = ensureAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = BASS_BASE_HZ * Math.pow(2, semi / 12);
     const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.42);
+    const releaseAt = now + seconds;
+    // two octaves together, like the sustained drone in the reference recording
+    [0, 12].forEach((octave) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = BASS_BASE_HZ * Math.pow(2, (semi + octave) / 12);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(octave === 0 ? 0.16 : 0.1, now + 0.08);
+      gain.gain.setValueAtTime(octave === 0 ? 0.16 : 0.1, releaseAt - 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.0001, releaseAt);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(releaseAt + 0.02);
+    });
   }
 
   function playKick() {
@@ -268,17 +276,17 @@
     demoTimeouts.push(loopId);
   }
 
-  function scheduleBassLoop() {
+  function scheduleDroneLoop() {
     const beatMs = 60000 / state.tempo;
     let t = 0;
-    BASS_PATTERN.forEach(([semi, dur]) => {
-      const id = setTimeout(() => playBassNote(semi), t);
+    DRONE_PATTERN.forEach(([semi, dur]) => {
+      const id = setTimeout(() => playDroneNote(semi, (dur * beatMs) / 1000), t);
       demoTimeouts.push(id);
       t += dur * beatMs;
     });
     const loopId = setTimeout(() => {
-      if (state.isPlayingDemo) scheduleBassLoop();
-    }, BASS_BEATS_PER_LOOP * beatMs);
+      if (state.isPlayingDemo) scheduleDroneLoop();
+    }, DRONE_BEATS_PER_LOOP * beatMs);
     demoTimeouts.push(loopId);
   }
 
@@ -306,7 +314,7 @@
     render();
 
     scheduleMelodyLoop();
-    scheduleBassLoop();
+    scheduleDroneLoop();
     scheduleDrumLoop();
   }
 
