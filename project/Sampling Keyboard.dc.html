@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<style>
+@keyframes recPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+@keyframes lcdBlink { 0%,100%{opacity:1} 50%{opacity:.5} }
+body{margin:0;background:oklch(0.22 0.02 260);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+.portrait-panel{display:flex}
+.landscape-panel{display:none}
+.rotate-hint{display:none}
+@media (orientation: landscape) {
+  .portrait-panel{display:none !important}
+  .landscape-panel{display:flex !important}
+}
+@media (orientation: portrait) {
+  .rotate-hint{display:flex !important}
+}
+</style>
+</helmet>
+
+<div class="portrait-panel" style="min-height:100vh;align-items:center;justify-content:center;padding:24px 12px;box-sizing:border-box">
+<div style="width:100%;max-width:420px;background:oklch(0.2 0.005 260);border-radius:18px;padding:20px 18px 26px;box-shadow:0 20px 50px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.06);box-sizing:border-box">
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding:0 4px">
+    <div style="font-weight:800;font-size:15px;letter-spacing:1.5px;color:oklch(0.7 0.16 55)">SAMPLEBOX <span style="font-weight:400;color:oklch(0.65 0.01 260);font-size:11px;letter-spacing:1px">SK-1 STYLE</span></div>
+    <div style="font-size:10px;font-weight:600;color:oklch(0.7 0.16 55);letter-spacing:1px">MINI • 1 OCT</div>
+  </div>
+
+  <div style="background:oklch(0.12 0.005 260);border-radius:10px;padding:10px 12px;margin-bottom:16px;box-shadow:inset 0 2px 6px rgba(0,0,0,0.6)">
+    <div style="background:oklch(0.72 0.09 145);border-radius:4px;padding:8px 10px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:oklch(0.22 0.05 150);letter-spacing:0.5px;min-height:18px;{{ lcdBlinkStyle }}">
+      {{ statusText }}
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+    <button onClick="{{ toggleRecord }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:oklch(0.68 0.18 50);color:oklch(0.15 0.01 260);border:none;border-radius:10px;padding:14px 10px;font-weight:700;font-size:14px;letter-spacing:0.5px;box-shadow:0 3px 0 oklch(0.48 0.16 45);cursor:pointer" style-active="transform:translateY(2px);box-shadow:0 1px 0 oklch(0.48 0.16 45)">
+      <span style="width:11px;height:11px;border-radius:50%;background:oklch(0.15 0.01 260);{{ recDotStyle }}"></span>
+      {{ recordLabel }}
+    </button>
+    <button onClick="{{ playSample }}" disabled="{{ !hasSample }}" style="flex:1;background:oklch(0.33 0.01 260);color:oklch(0.7 0.16 55);border:1px solid oklch(0.45 0.02 260);border-radius:10px;padding:14px 10px;font-weight:700;font-size:14px;letter-spacing:0.5px;box-shadow:0 3px 0 oklch(0.2 0.01 260);cursor:pointer;opacity:{{ hasSample_opacity }}" style-active="transform:translateY(2px);box-shadow:0 1px 0 oklch(0.2 0.01 260)">
+      ▶ PLAY
+    </button>
+    <button onClick="{{ clearSample }}" disabled="{{ !hasSample }}" style="background:oklch(0.33 0.01 260);color:oklch(0.7 0.16 55);border:1px solid oklch(0.45 0.02 260);border-radius:10px;padding:14px 14px;font-weight:700;font-size:13px;box-shadow:0 3px 0 oklch(0.2 0.01 260);cursor:pointer;opacity:{{ hasSample_opacity }}" style-active="transform:translateY(2px);box-shadow:0 1px 0 oklch(0.2 0.01 260)">
+      ✕
+    </button>
+  </div>
+
+  <div style="background:oklch(0.16 0.005 260);border-radius:10px;padding:12px 14px;margin-bottom:16px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);border:1px solid oklch(0.28 0.01 260)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:oklch(0.65 0.02 260)">TOY SYMPHONY DEMO</div>
+      <button onClick="{{ toggleDemo }}" disabled="{{ !hasSample }}" style="background:{{ demoBtnBg }};color:oklch(0.15 0.01 260);border:none;border-radius:7px;padding:8px 16px;font-weight:700;font-size:12px;letter-spacing:0.5px;cursor:pointer;opacity:{{ hasSample_opacity }}">
+        {{ demoBtnLabel }}
+      </button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:oklch(0.6 0.01 260);font-weight:600">
+        <span style="width:52px">TEMPO</span>
+        <span style="flex:1;font-family:'Courier New',monospace;color:oklch(0.7 0.16 55);font-size:13px">{{ tempo }} BPM</span>
+        <button onClick="{{ tempoDown }}" style="width:26px;height:22px;background:oklch(0.33 0.01 260);color:oklch(0.7 0.16 55);border:1px solid oklch(0.45 0.02 260);border-radius:4px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">▼</button>
+        <button onClick="{{ tempoUp }}" style="width:26px;height:22px;background:oklch(0.33 0.01 260);color:oklch(0.7 0.16 55);border:1px solid oklch(0.45 0.02 260);border-radius:4px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">▲</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:oklch(0.6 0.01 260);font-weight:600">
+        <span style="width:52px">PITCH</span>
+        <input type="range" min="-12" max="12" value="{{ demoPitch }}" onChange="{{ setDemoPitch }}" style="flex:1;accent-color:oklch(0.68 0.18 50)" />
+        <span style="width:38px;text-align:right;font-family:'Courier New',monospace;color:oklch(0.7 0.16 55)">{{ demoPitchLabel }}</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="rotate-hint" style="align-items:center;justify-content:center;gap:8px;margin-top:4px;font-size:11px;color:oklch(0.55 0.01 260);letter-spacing:0.5px">
+    <span style="font-size:16px">⟳</span> ROTATE PHONE FOR THE KEYBOARD
+  </div>
+
+</div>
+</div>
+
+<div class="landscape-panel" style="min-height:100vh;flex-direction:column;box-sizing:border-box;background:oklch(0.2 0.005 260)">
+
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;box-sizing:border-box">
+    <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:oklch(0.7 0.16 55);white-space:nowrap">SAMPLEBOX</div>
+    <div style="background:oklch(0.12 0.005 260);border-radius:6px;padding:6px 10px;flex:1;box-shadow:inset 0 2px 4px rgba(0,0,0,0.6)">
+      <div style="background:oklch(0.72 0.09 145);border-radius:3px;padding:4px 8px;font-family:'Courier New',monospace;font-weight:700;font-size:11px;color:oklch(0.22 0.05 150);letter-spacing:0.5px;{{ lcdBlinkStyle }}">
+        {{ statusText }}
+      </div>
+    </div>
+    <button onClick="{{ toggleRecord }}" style="display:flex;align-items:center;gap:6px;background:oklch(0.68 0.18 50);color:oklch(0.15 0.01 260);border:none;border-radius:7px;padding:8px 12px;font-weight:700;font-size:11px;letter-spacing:0.5px;cursor:pointer;white-space:nowrap">
+      <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.15 0.01 260);{{ recDotStyle }}"></span>
+      {{ recordLabel }}
+    </button>
+    <button onClick="{{ playSample }}" disabled="{{ !hasSample }}" style="background:oklch(0.33 0.01 260);color:oklch(0.7 0.16 55);border:1px solid oklch(0.45 0.02 260);border-radius:7px;padding:8px 12px;font-weight:700;font-size:11px;cursor:pointer;opacity:{{ hasSample_opacity }};white-space:nowrap">▶ PLAY</button>
+    <button onClick="{{ toggleDemo }}" disabled="{{ !hasSample }}" style="background:{{ demoBtnBg }};color:oklch(0.15 0.01 260);border:none;border-radius:7px;padding:8px 12px;font-weight:700;font-size:11px;cursor:pointer;opacity:{{ hasSample_opacity }};white-space:nowrap">{{ demoBtnLabel }}</button>
+  </div>
+
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;user-select:none;padding:0 8px 8px;box-sizing:border-box">
+    <div style="display:flex;flex:1;gap:2px">
+      <sc-for list="{{ whiteKeys }}" as="wk" hint-placeholder-count="8">
+        <div
+          onMouseDown="{{ wk.onPress }}"
+          onMouseUp="{{ stopAllVisualPress }}"
+          onMouseLeave="{{ stopAllVisualPress }}"
+          onTouchStart="{{ wk.onPress }}"
+          onTouchEnd="{{ stopAllVisualPress }}"
+          style="flex:1;background:{{ wk.bg }};border-radius:0 0 6px 6px;border:1px solid oklch(0.4 0.02 70);box-shadow:inset 0 -4px 0 rgba(0,0,0,0.08);display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;font-size:12px;font-weight:700;color:oklch(0.45 0.02 70);cursor:pointer">
+          {{ wk.label }}
+        </div>
+      </sc-for>
+    </div>
+    <div style="position:absolute;top:0;left:8px;right:8px;height:62%;pointer-events:none">
+      <sc-for list="{{ blackKeys }}" as="bk" hint-placeholder-count="5">
+        <div
+          onMouseDown="{{ bk.onPress }}"
+          onMouseUp="{{ stopAllVisualPress }}"
+          onMouseLeave="{{ stopAllVisualPress }}"
+          onTouchStart="{{ bk.onPress }}"
+          onTouchEnd="{{ stopAllVisualPress }}"
+          style="position:absolute;top:0;left:{{ bk.left }};width:11%;height:100%;background:{{ bk.bg }};border-radius:0 0 4px 4px;box-shadow:0 3px 4px rgba(0,0,0,0.4);pointer-events:auto;cursor:pointer">
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:760},&quot;lofiFilter&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sound&quot;},&quot;maxSampleLength&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.4,&quot;min&quot;:0.5,&quot;max&quot;:1.4,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Sound&quot;},&quot;demoDefaultTempo&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:120,&quot;min&quot;:60,&quot;max&quot;:200,&quot;step&quot;:5,&quot;unit&quot;:&quot;bpm&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Sound&quot;}}">
+const WHITE_SEMI = [0,2,4,5,7,9,11,12];
+const WHITE_LABEL = ['C','D','E','F','G','A','B','C'];
+const BLACK_SEMI = [1,3,6,8,10];
+const BLACK_AFTER_WHITE = [0,1,3,4,5]; // index of white key each black key sits after
+// simple original toy-tune melody (semitone offsets from base, beats duration)
+const MELODY = [
+  [0,1],[0,1],[7,1],[7,1],[9,1],[9,1],[7,2],
+  [5,1],[5,1],[4,1],[4,1],[2,1],[2,1],[0,2],
+  [7,1],[7,1],[5,1],[5,1],[4,1],[4,1],[2,2],
+  [0,2]
+];
+
+class Component extends DCLogic {
+  state = {
+    hasSample: false,
+    isRecording: false,
+    isPlayingDemo: false,
+    tempo: this.props.demoDefaultTempo ?? 120,
+    demoPitch: 0,
+    statusText: 'PRESS REC TO SAMPLE',
+    activeSemi: null,
+  };
+
+  componentDidMount() {
+    this.audioCtx = null;
+    this.sampleBuffer = null;
+    this.recorder = null;
+    this.chunks = [];
+    this.demoTimeouts = [];
+  }
+
+  ensureCtx() {
+    if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+    return this.audioCtx;
+  }
+
+  toggleRecord = async () => {
+    if (this.state.isRecording) return;
+    this.stopDemoPlayback();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.ensureCtx();
+      this.chunks = [];
+      this.recorder = new MediaRecorder(stream);
+      this.recorder.ondataavailable = (e) => this.chunks.push(e.data);
+      this.recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(this.chunks, { type: 'audio/webm' });
+        const arrayBuf = await blob.arrayBuffer();
+        try {
+          this.sampleBuffer = await this.audioCtx.decodeAudioData(arrayBuf);
+          this.setState({ isRecording: false, hasSample: true, statusText: 'SAMPLE READY' });
+        } catch (err) {
+          this.setState({ isRecording: false, statusText: 'RECORD ERROR - TRY AGAIN' });
+        }
+      };
+      this.recorder.start();
+      this.setState({ isRecording: true, statusText: 'RECORDING...' });
+      const maxMs = (this.props.maxSampleLength ?? 1.4) * 1000;
+      this.recTimer = setTimeout(() => {
+        if (this.recorder && this.recorder.state === 'recording') this.recorder.stop();
+      }, maxMs);
+    } catch (err) {
+      this.setState({ statusText: 'MIC ACCESS DENIED' });
+    }
+  };
+
+  buildPlayChain(rate) {
+    const ctx = this.ensureCtx();
+    const src = ctx.createBufferSource();
+    src.buffer = this.sampleBuffer;
+    src.playbackRate.value = rate;
+    let node = src;
+    if (this.props.lofiFilter) {
+      const shaper = ctx.createWaveShaper();
+      const n = 256, curve = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; curve[i] = Math.round(x * 8) / 8; }
+      shaper.curve = curve;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 3200;
+      src.connect(shaper); shaper.connect(filter); filter.connect(ctx.destination);
+    } else {
+      src.connect(ctx.destination);
+    }
+    return src;
+  }
+
+  playSemitone = (semi) => {
+    if (!this.sampleBuffer) return;
+    const rate = Math.pow(2, semi / 12);
+    const src = this.buildPlayChain(rate);
+    src.start();
+    this.setState({ activeSemi: semi });
+    clearTimeout(this._activeTimer);
+    this._activeTimer = setTimeout(() => this.setState({ activeSemi: null }), 180);
+  };
+
+  playSample = () => this.playSemitone(0);
+
+  clearSample = () => {
+    this.sampleBuffer = null;
+    this.stopDemoPlayback();
+    this.setState({ hasSample: false, statusText: 'PRESS REC TO SAMPLE' });
+  };
+
+  setTempo = (e) => this.setState({ tempo: parseInt(e.target.value, 10) });
+  bumpTempo = (delta) => this.setState({ tempo: Math.max(60, Math.min(200, this.state.tempo + delta)) });
+  setDemoPitch = (e) => this.setState({ demoPitch: parseInt(e.target.value, 10) });
+
+  stopDemoPlayback() {
+    this.demoTimeouts.forEach(clearTimeout);
+    this.demoTimeouts = [];
+    if (this.state.isPlayingDemo) this.setState({ isPlayingDemo: false, statusText: this.state.hasSample ? 'SAMPLE READY' : 'PRESS REC TO SAMPLE' });
+  }
+
+  toggleDemo = () => {
+    if (!this.state.hasSample) return;
+    if (this.state.isPlayingDemo) { this.stopDemoPlayback(); return; }
+    this.setState({ isPlayingDemo: true, statusText: 'PLAYING DEMO' });
+    const beatMs = 60000 / this.state.tempo;
+    let t = 0;
+    MELODY.forEach(([semi, dur]) => {
+      const id = setTimeout(() => this.playSemitone(semi + this.state.demoPitch), t);
+      this.demoTimeouts.push(id);
+      t += dur * beatMs;
+    });
+    const endId = setTimeout(() => this.setState({ isPlayingDemo: false, statusText: 'SAMPLE READY' }), t + 200);
+    this.demoTimeouts.push(endId);
+  };
+
+  stopAllVisualPress = () => {};
+
+  renderVals() {
+    const hasSample = this.state.hasSample;
+    const whiteKeys = WHITE_SEMI.map((semi, i) => ({
+      label: WHITE_LABEL[i],
+      bg: this.state.activeSemi === semi ? 'oklch(0.75 0.1 85)' : 'oklch(0.98 0.005 85)',
+      onPress: () => this.playSemitone(semi),
+    }));
+    const blackKeys = BLACK_SEMI.map((semi, i) => ({
+      left: `${(BLACK_AFTER_WHITE[i] + 1) * 12.5 - 6.5}%`,
+      bg: this.state.activeSemi === semi ? 'oklch(0.4 0.05 85)' : 'oklch(0.2 0.01 260)',
+      onPress: () => this.playSemitone(semi),
+    }));
+    return {
+      statusText: this.state.statusText,
+      hasSample,
+      hasSample_opacity: hasSample ? 1 : 0.45,
+      recordLabel: this.state.isRecording ? 'STOP' : 'SAMPLE',
+      recDotStyle: this.state.isRecording ? 'animation:recPulse 0.8s infinite' : '',
+      lcdBlinkStyle: this.state.isRecording ? 'animation:lcdBlink 0.6s infinite' : '',
+      demoBtnLabel: this.state.isPlayingDemo ? '■ STOP' : '▶ DEMO',
+      demoBtnBg: this.state.isPlayingDemo ? 'oklch(0.5 0.19 25)' : 'oklch(0.55 0.01 260)',
+      tempo: this.state.tempo,
+      demoPitch: this.state.demoPitch,
+      demoPitchLabel: (this.state.demoPitch > 0 ? '+' : '') + this.state.demoPitch,
+      toggleRecord: this.toggleRecord,
+      playSample: this.playSample,
+      clearSample: this.clearSample,
+      toggleDemo: this.toggleDemo,
+      setTempo: this.setTempo,
+      tempoUp: () => this.bumpTempo(5),
+      tempoDown: () => this.bumpTempo(-5),
+      setDemoPitch: this.setDemoPitch,
+      stopAllVisualPress: this.stopAllVisualPress,
+      whiteKeys,
+      blackKeys,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

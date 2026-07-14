@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c1c22">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23161619'/%3E%3Crect x='5' y='18' width='22' height='9' rx='1.5' fill='%23f2f2f2'/%3E%3Crect x='8' y='11' width='4' height='11' fill='%23161619'/%3E%3Crect x='15' y='11' width='4' height='11' fill='%23161619'/%3E%3Ccircle cx='24' cy='8' r='4' fill='%23d97a3e'/%3E%3C/svg%3E">
+<title>SampleBox — SK-1 Style Sampler</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="stage">
+  <div class="device-card">
+    <div class="app">
+
+      <!-- Full control panel: shown on desktop and mobile portrait -->
+      <div class="panel gc-panel">
+        <div class="panel-title">
+          <div class="brand">SAMPLEBOX <span>SK-1 STYLE</span></div>
+          <div class="tag">MINI &bull; 1 OCT</div>
+        </div>
+
+        <div class="lcd-outer">
+          <div class="lcd" data-role="lcd">PRESS SAMPLE TO RECORD</div>
+        </div>
+
+        <div class="transport">
+          <button class="btn btn-orange" data-role="sample-btn" type="button">
+            <span class="rec-dot" data-role="rec-dot"></span>
+            <span data-role="sample-label">SAMPLE</span>
+          </button>
+          <button class="btn btn-gray" data-role="play-btn" type="button" disabled>&#9658; PLAY</button>
+          <button class="btn btn-gray btn-clear" id="clearBtn" type="button" disabled aria-label="Clear sample">&#10005;</button>
+        </div>
+
+        <div class="demo-box">
+          <div class="demo-head">
+            <div class="demo-label">TOY SYMPHONY DEMO</div>
+            <button class="btn btn-demo" data-role="demo-btn" type="button" disabled>&#9658; DEMO</button>
+          </div>
+          <div class="demo-row">
+            <span class="demo-row-label">TEMPO</span>
+            <span class="demo-row-value" id="tempoValue">120 BPM</span>
+            <button class="mini-btn" id="tempoDown" type="button" aria-label="Decrease tempo">&#9660;</button>
+            <button class="mini-btn" id="tempoUp" type="button" aria-label="Increase tempo">&#9650;</button>
+          </div>
+          <div class="demo-row">
+            <span class="demo-row-label">PITCH</span>
+            <input type="range" min="-12" max="12" value="0" step="1" id="pitchSlider" class="pitch-slider" aria-label="Demo pitch offset">
+            <span class="demo-row-value pitch-value" id="pitchValue">+0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rotate hint: mobile portrait only -->
+      <div class="rotate-hint gc-hint">
+        <span class="rotate-icon">&#8635;</span> ROTATE PHONE FOR THE KEYBOARD
+      </div>
+
+      <!-- Compact transport strip: mobile landscape only -->
+      <div class="strip gc-strip">
+        <div class="strip-brand">SAMPLEBOX</div>
+        <div class="strip-lcd-outer">
+          <div class="strip-lcd lcd" data-role="lcd">PRESS SAMPLE TO RECORD</div>
+        </div>
+        <button class="btn btn-orange btn-sm" data-role="sample-btn" type="button">
+          <span class="rec-dot" data-role="rec-dot"></span>
+          <span data-role="sample-label">SAMPLE</span>
+        </button>
+        <button class="btn btn-gray btn-sm" data-role="play-btn" type="button" disabled>&#9658; PLAY</button>
+        <button class="btn btn-demo btn-sm" data-role="demo-btn" type="button" disabled>&#9658; DEMO</button>
+      </div>
+
+      <!-- Keyboard: shown on desktop and mobile landscape -->
+      <div class="keyboard gc-keyboard">
+        <div class="white-keys"></div>
+        <div class="black-keys"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

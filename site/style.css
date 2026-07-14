@@ -1,0 +1,390 @@
+:root {
+  --bg: oklch(0.22 0.02 260);
+  --panel: oklch(0.2 0.005 260);
+  --panel-inner: oklch(0.16 0.005 260);
+  --panel-inner-border: oklch(0.28 0.01 260);
+
+  --lcd-outer: oklch(0.12 0.005 260);
+  --lcd-inner: oklch(0.72 0.09 145);
+  --lcd-text: oklch(0.22 0.05 150);
+
+  --orange: oklch(0.7 0.16 55);
+  --orange-strong: oklch(0.68 0.18 50);
+  --orange-shadow: oklch(0.48 0.16 45);
+
+  --btn-gray: oklch(0.33 0.01 260);
+  --btn-gray-border: oklch(0.45 0.02 260);
+  --btn-gray-shadow: oklch(0.2 0.01 260);
+
+  --demo-active: oklch(0.5 0.19 25);
+  --demo-inactive: oklch(0.55 0.01 260);
+
+  --key-white: oklch(0.98 0.005 85);
+  --key-white-active: oklch(0.75 0.1 85);
+  --key-black: oklch(0.2 0.01 260);
+  --key-black-active: oklch(0.4 0.05 85);
+  --key-border: oklch(0.4 0.02 70);
+  --key-label: oklch(0.45 0.02 70);
+
+  --text-dim: oklch(0.65 0.01 260);
+  --text-dim2: oklch(0.6 0.01 260);
+  --ink: oklch(0.15 0.01 260);
+}
+
+* { box-sizing: border-box; }
+
+@keyframes recPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes lcdBlink { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  overscroll-behavior: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.stage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+}
+
+.device-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 20px 18px 26px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+@media (min-width: 821px) {
+  .device-card { max-width: 560px; }
+}
+
+.app {
+  display: grid;
+  grid-template-areas: "panel" "keyboard";
+  gap: 16px;
+}
+
+.gc-strip, .gc-hint { display: none; }
+
+/* ---------- Control panel ---------- */
+
+.panel { grid-area: panel; }
+
+.panel-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+.brand {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--orange);
+}
+.brand span {
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--orange);
+  letter-spacing: 1px;
+}
+
+.lcd-outer {
+  background: var(--lcd-outer);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+.lcd {
+  background: var(--lcd-inner);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--lcd-text);
+  letter-spacing: 0.5px;
+  min-height: 18px;
+}
+.lcd.blink { animation: lcdBlink 0.6s infinite; }
+
+.transport {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 14px 10px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+.btn:active:not(:disabled) { transform: translateY(2px); }
+
+.btn-orange {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--orange-strong);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--orange-shadow);
+}
+.btn-orange:active { box-shadow: 0 1px 0 var(--orange-shadow); }
+
+.btn-gray {
+  flex: 1;
+  background: var(--btn-gray);
+  color: var(--orange);
+  border: 1px solid var(--btn-gray-border);
+  box-shadow: 0 3px 0 var(--btn-gray-shadow);
+}
+.btn-gray:active:not(:disabled) { box-shadow: 0 1px 0 var(--btn-gray-shadow); }
+
+.btn-clear {
+  flex: 0 0 auto;
+  padding: 14px 14px;
+  font-size: 13px;
+}
+
+.rec-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--ink);
+  display: inline-block;
+}
+.rec-dot.pulse { animation: recPulse 0.8s infinite; }
+
+.demo-box {
+  background: var(--panel-inner);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--panel-inner-border);
+}
+.demo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.demo-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-dim2);
+}
+.btn-demo {
+  background: var(--demo-inactive);
+  color: var(--ink);
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border: none;
+}
+.btn-demo.active { background: var(--demo-active); }
+
+.demo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-dim2);
+  font-weight: 600;
+}
+.demo-row + .demo-row { margin-top: 8px; }
+.demo-row-label { width: 52px; flex: 0 0 auto; }
+.demo-row-value {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  color: var(--orange);
+  font-size: 13px;
+}
+.pitch-value {
+  flex: 0 0 auto;
+  width: 30px;
+  text-align: right;
+}
+
+.mini-btn {
+  width: 26px;
+  height: 22px;
+  background: var(--btn-gray);
+  color: var(--orange);
+  border: 1px solid var(--btn-gray-border);
+  border-radius: 4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.pitch-slider {
+  flex: 1;
+  accent-color: var(--orange-strong);
+}
+
+/* ---------- Rotate hint ---------- */
+
+.rotate-hint {
+  grid-area: hint;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-dim2);
+  letter-spacing: 0.5px;
+}
+.rotate-icon { font-size: 16px; }
+
+/* ---------- Compact strip (mobile landscape) ---------- */
+
+.strip {
+  grid-area: strip;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 2px;
+}
+.strip-brand {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--orange);
+  white-space: nowrap;
+}
+.strip-lcd-outer {
+  background: var(--lcd-outer);
+  border-radius: 6px;
+  padding: 6px 10px;
+  flex: 1;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+.strip-lcd {
+  padding: 4px 8px;
+  font-size: 11px;
+  min-height: 0;
+}
+.btn-sm {
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.btn-sm.btn-orange { flex: 0 0 auto; }
+
+/* ---------- Keyboard ---------- */
+
+.keyboard {
+  grid-area: keyboard;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+  height: 200px;
+}
+.white-keys {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+}
+.key {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.key-white {
+  flex: 1;
+  background: var(--key-white);
+  border-radius: 0 0 6px 6px;
+  border: 1px solid var(--key-border);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--key-label);
+}
+.key-white.active { background: var(--key-white-active); }
+
+.black-keys {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 62%;
+  pointer-events: none;
+}
+.key-black {
+  position: absolute;
+  top: 0;
+  width: 11%;
+  height: 100%;
+  background: var(--key-black);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+.key-black.active { background: var(--key-black-active); }
+
+/* ---------- Breakpoints: phone portrait/landscape swap ---------- */
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .app { grid-template-areas: "panel" "hint"; }
+  .gc-keyboard, .gc-strip { display: none; }
+  .gc-hint { display: flex; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .stage { padding: 0; }
+  .device-card {
+    max-width: none;
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 8px;
+  }
+  .app {
+    grid-template-areas: "strip" "keyboard";
+    height: 100vh;
+    gap: 8px;
+  }
+  .gc-panel, .gc-hint { display: none; }
+  .gc-strip { display: flex; }
+  .gc-keyboard { height: auto; flex: 1; }
+}
