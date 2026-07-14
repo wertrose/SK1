@@ -24,19 +24,6 @@
     [5, 0.5], [4, 1.75],
   ];
 
-  // Backing parts inspired by the reference recording's own texture: the Toy
-  // Symphony is built on a continuous two-octave tonic drone (found by isolating
-  // the piece's two loudest, most sustained pitches), plus a light original
-  // percussion layer for "drums, etc." that keeps going while the sample leads.
-  const DRONE_PATTERN = [[0, 2], [0, 2], [0, 2], [0, 2]];
-  const DRONE_BEATS_PER_LOOP = 8;
-  const BASS_BASE_HZ = 98.0; // G2 (drone root, one octave below the recording's G3)
-
-  const KICK_BEATS = [0, 2];
-  const SNARE_BEATS = [1, 3];
-  const HIHAT_BEATS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5];
-  const DRUM_BEATS_PER_LOOP = 4;
-
   const state = {
     hasSample: false,
     isRecording: false,
@@ -56,8 +43,6 @@
   let activeTimer = null;
   let demoTimeouts = [];
 
-  let noiseBuffer = null;
-
   function ensureAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -65,84 +50,6 @@
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-  // ---------- Backing synth (bass + drums) ----------
-
-  function getNoiseBuffer(ctx) {
-    if (!noiseBuffer) {
-      noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
-      const data = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    }
-    return noiseBuffer;
-  }
-
-  function playDroneNote(semi, seconds) {
-    const ctx = ensureAudioCtx();
-    const now = ctx.currentTime;
-    const releaseAt = now + seconds;
-    // two octaves together, like the sustained drone in the reference recording
-    [0, 12].forEach((octave) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = BASS_BASE_HZ * Math.pow(2, (semi + octave) / 12);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(octave === 0 ? 0.16 : 0.1, now + 0.08);
-      gain.gain.setValueAtTime(octave === 0 ? 0.16 : 0.1, releaseAt - 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.0001, releaseAt);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(now);
-      osc.stop(releaseAt + 0.02);
-    });
-  }
-
-  function playKick() {
-    const ctx = ensureAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.2);
-  }
-
-  function playHihat() {
-    const ctx = ensureAudioCtx();
-    const src = ctx.createBufferSource();
-    src.buffer = getNoiseBuffer(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'highpass';
-    filter.frequency.value = 7000;
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    src.connect(filter).connect(gain).connect(ctx.destination);
-    src.start(now);
-    src.stop(now + 0.06);
-  }
-
-  function playSnare() {
-    const ctx = ensureAudioCtx();
-    const src = ctx.createBufferSource();
-    src.buffer = getNoiseBuffer(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1800;
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    src.connect(filter).connect(gain).connect(ctx.destination);
-    src.start(now);
-    src.stop(now + 0.13);
-  }
 
   // ---------- Recording ----------
 
@@ -289,35 +196,6 @@
     demoTimeouts.push(loopId);
   }
 
-  function scheduleDroneLoop() {
-    const beatMs = 60000 / state.tempo;
-    let t = 0;
-    DRONE_PATTERN.forEach(([semi, dur]) => {
-      const id = setTimeout(() => playDroneNote(semi, (dur * beatMs) / 1000), t);
-      demoTimeouts.push(id);
-      t += dur * beatMs;
-    });
-    const loopId = setTimeout(() => {
-      if (state.isPlayingDemo) scheduleDroneLoop();
-    }, DRONE_BEATS_PER_LOOP * beatMs);
-    demoTimeouts.push(loopId);
-  }
-
-  function scheduleDrumLoop() {
-    const beatMs = 60000 / state.tempo;
-    const schedule = (beats, fn) => beats.forEach((b) => {
-      const id = setTimeout(fn, b * beatMs);
-      demoTimeouts.push(id);
-    });
-    schedule(KICK_BEATS, playKick);
-    schedule(SNARE_BEATS, playSnare);
-    schedule(HIHAT_BEATS, playHihat);
-    const loopId = setTimeout(() => {
-      if (state.isPlayingDemo) scheduleDrumLoop();
-    }, DRUM_BEATS_PER_LOOP * beatMs);
-    demoTimeouts.push(loopId);
-  }
-
   function toggleDemo() {
     if (!state.hasSample) return;
     if (state.isPlayingDemo) { stopDemoPlayback(); return; }
@@ -327,8 +205,6 @@
     render();
 
     scheduleMelodyLoop();
-    scheduleDroneLoop();
-    scheduleDrumLoop();
   }
 
   function bumpTempo(delta) {
