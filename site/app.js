@@ -12,8 +12,8 @@
   const BLACK_SEMI = [1, 3, 6, 8, 10];
   const BLACK_AFTER_WHITE = [0, 1, 3, 4, 5]; // index of white key each black key sits after
 
-  // Melody transcribed from a clean reference recording of the Toy Symphony
-  // (tonic = 0, i.e. G), quantized to beats: [semitone offset from base key, duration in beats]
+  // Melody transcribed from a clean reference recording of the full Toy Symphony
+  // movement (tonic = 0, i.e. G), quantized to beats: [semitone offset, duration in beats]
   const MELODY = [
     [0, 1.5], [4, 0.75], [2, 0.25], [2, 2.75], [4, 1.25], [9, 2],
     [5, 0.25], [4, 1], [2, 0.75], [3, 0.5], [7, 0.5], [11, 1.75],
@@ -21,7 +21,11 @@
     [5, 0.25], [4, 1.25], [2, 0.75], [2, 0.75], [0, 0.75], [7, 1],
     [9, 0.75], [6, 0.25], [7, 0.5], [9, 1], [8, 0.75], [9, 1.75],
     [5, 0.5], [9, 1], [2, 0.5], [4, 0.25], [3, 0.25], [7, 0.5],
-    [5, 0.5], [4, 1.75],
+    [5, 0.5], [4, 1.75], [4, 2], [4, 4.25], [2, 0.25], [3, 0.75],
+    [7, 1.5], [7, 0.5], [5, 0.25], [7, 0.75], [3, 0.5], [4, 1],
+    [7, 3], [9, 0.5], [7, 0.75], [9, 0.25], [8, 0.25], [7, 0.25],
+    [7, 2.5], [3, 0.25], [3, 0.5], [11, 1], [7, 2], [7, 1.75],
+    [9, 0.25], [9, 0.25], [7, 1.25],
   ];
 
   const state = {
