@@ -222,14 +222,26 @@
 
   // ---------- Playback ----------
 
-  function playSemitone(semi) {
+  function playSemitone(semi, durationSeconds) {
     if (!sampleBuffer) return;
     const ctx = ensureAudioCtx();
     const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
     src.buffer = sampleBuffer;
     src.playbackRate.value = Math.pow(2, semi / 12);
-    src.connect(ctx.destination);
-    src.start();
+    src.connect(gain).connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    src.start(now);
+
+    // In the demo song, cut each note off at the end of its own beat slot instead
+    // of letting the full (possibly stretched-out) sample bleed into the next note.
+    if (durationSeconds) {
+      const fadeStart = Math.max(now, now + durationSeconds - 0.03);
+      gain.gain.setValueAtTime(1, fadeStart);
+      gain.gain.linearRampToValueAtTime(0, fadeStart + 0.03);
+      src.stop(fadeStart + 0.03);
+    }
 
     state.activeSemi = semi;
     render();
@@ -266,7 +278,8 @@
     const beatMs = 60000 / state.tempo;
     let t = 0;
     MELODY.forEach(([semi, dur]) => {
-      const id = setTimeout(() => playSemitone(semi + state.demoPitch), t);
+      const noteSeconds = (dur * beatMs) / 1000;
+      const id = setTimeout(() => playSemitone(semi + state.demoPitch, noteSeconds), t);
       demoTimeouts.push(id);
       t += dur * beatMs;
     });
