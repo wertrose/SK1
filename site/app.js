@@ -12,16 +12,27 @@
   const BLACK_SEMI = [1, 3, 6, 8, 10];
   const BLACK_AFTER_WHITE = [0, 1, 3, 4, 5]; // index of white key each black key sits after
 
-  // User-supplied original melody, transposed to fit the 1-octave keyboard
-  // (tonic = 0) and quantized to beats: [semitone offset from base key, duration in beats]
+  // Melody transcribed from the user-supplied recording (tonic = 0, Bb major),
+  // quantized to beats: [semitone offset from base key, duration in beats]
   const MELODY = [
-    [11, 1], [0, 0.5], [0, 0.5], [4, 0.5], [2, 0.75], [0, 0.75],
-    [5, 0.5], [4, 0.25], [4, 1.75],
-    [5, 0.75], [4, 0.25], [4, 0.25], [2, 0.5], [2, 0.25], [0, 0.25], [2, 0.25],
-    [11, 0.25], [0, 0.5], [0, 0.5], [4, 0.5], [2, 0.75], [0, 0.25],
-    [7, 0.25], [7, 0.25], [5, 0.25], [5, 0.25], [0, 0.25], [4, 0.25], [0, 0.25],
-    [9, 0.25], [9, 1],
+    [0, 1.25], [2, 0.25], [0, 1.25], [5, 0.5], [4, 0.75], [9, 0.5], [4, 0.5],
+    [5, 0.5], [4, 0.75], [2, 0.5], [2, 0.5], [2, 0.5], [0, 1.25], [0, 1],
+    [5, 0.5], [4, 0.25], [0, 0.5], [9, 0.25], [7, 0.75], [5, 0.5], [4, 0.75],
+    [5, 0.75], [5, 0.5], [11, 1.25], [0, 3.25], [9, 0.5], [4, 0.75], [2, 0.5],
+    [4, 0.75], [5, 0.25], [5, 0.25], [5, 0.5], [11, 0.75], [0, 0.75], [4, 1],
+    [4, 1.75], [7, 1], [11, 1],
   ];
+
+  // Original backing parts (not from the recording) that keep playing under the
+  // sample so it stays "the star" while a rhythm section continues underneath.
+  const BASS_PATTERN = [[0, 1], [0, 1], [2, 1], [4, 1], [5, 1], [4, 1], [2, 1], [0, 1]];
+  const BASS_BEATS_PER_LOOP = 8;
+  const BASS_BASE_HZ = 116.54; // Bb2
+
+  const KICK_BEATS = [0, 2];
+  const SNARE_BEATS = [1, 3];
+  const HIHAT_BEATS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5];
+  const DRUM_BEATS_PER_LOOP = 4;
 
   const state = {
     hasSample: false,
@@ -42,6 +53,8 @@
   let activeTimer = null;
   let demoTimeouts = [];
 
+  let noiseBuffer = null;
+
   function ensureAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -49,6 +62,79 @@
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // ---------- Backing synth (bass + drums) ----------
+
+  function getNoiseBuffer(ctx) {
+    if (!noiseBuffer) {
+      noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuffer;
+  }
+
+  function playBassNote(semi) {
+    const ctx = ensureAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = BASS_BASE_HZ * Math.pow(2, semi / 12);
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.42);
+  }
+
+  function playKick() {
+    const ctx = ensureAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+
+  function playHihat() {
+    const ctx = ensureAudioCtx();
+    const src = ctx.createBufferSource();
+    src.buffer = getNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 7000;
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.06);
+  }
+
+  function playSnare() {
+    const ctx = ensureAudioCtx();
+    const src = ctx.createBufferSource();
+    src.buffer = getNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800;
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.13);
+  }
 
   // ---------- Recording ----------
 
@@ -182,6 +268,35 @@
     demoTimeouts.push(loopId);
   }
 
+  function scheduleBassLoop() {
+    const beatMs = 60000 / state.tempo;
+    let t = 0;
+    BASS_PATTERN.forEach(([semi, dur]) => {
+      const id = setTimeout(() => playBassNote(semi), t);
+      demoTimeouts.push(id);
+      t += dur * beatMs;
+    });
+    const loopId = setTimeout(() => {
+      if (state.isPlayingDemo) scheduleBassLoop();
+    }, BASS_BEATS_PER_LOOP * beatMs);
+    demoTimeouts.push(loopId);
+  }
+
+  function scheduleDrumLoop() {
+    const beatMs = 60000 / state.tempo;
+    const schedule = (beats, fn) => beats.forEach((b) => {
+      const id = setTimeout(fn, b * beatMs);
+      demoTimeouts.push(id);
+    });
+    schedule(KICK_BEATS, playKick);
+    schedule(SNARE_BEATS, playSnare);
+    schedule(HIHAT_BEATS, playHihat);
+    const loopId = setTimeout(() => {
+      if (state.isPlayingDemo) scheduleDrumLoop();
+    }, DRUM_BEATS_PER_LOOP * beatMs);
+    demoTimeouts.push(loopId);
+  }
+
   function toggleDemo() {
     if (!state.hasSample) return;
     if (state.isPlayingDemo) { stopDemoPlayback(); return; }
@@ -191,6 +306,8 @@
     render();
 
     scheduleMelodyLoop();
+    scheduleBassLoop();
+    scheduleDrumLoop();
   }
 
   function bumpTempo(delta) {
