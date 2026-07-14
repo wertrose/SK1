@@ -99,18 +99,6 @@ button:disabled {
   letter-spacing: 1.5px;
   color: var(--orange);
 }
-.brand span {
-  font-weight: 400;
-  color: var(--text-dim);
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-.tag {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--orange);
-  letter-spacing: 1px;
-}
 
 .lcd-outer {
   background: var(--lcd-outer);
@@ -194,14 +182,8 @@ button:disabled {
 .demo-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   margin-bottom: 10px;
-}
-.demo-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--text-dim2);
 }
 .btn-demo {
   background: var(--demo-inactive);
