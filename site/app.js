@@ -30,7 +30,10 @@
   ];
 
   // Piano 2 enters partway through Piano 1's phrase, like the source recording.
+  // Raised half an octave (6 semitones) from its literal transcribed register
+  // so it reads as "lower voice" rather than "too deep/slow."
   const MELODY_2_START_BEAT = 20.5;
+  const MELODY_2_PITCH_OFFSET = 6;
   const MELODY_2 = [
     [-5, 0.5], [-8, 1], [-5, 0.5], [-8, 1], [-3, 0.5], [-5, 0.5], [-5, 0.5], [-7, 0.5],
     [-8, 1], [-3, 0.5], [-3, 0.5], [-5, 0.5], [-7, 0.5], [-5, 0.5], [-5, 0.5], [-5, 0.5],
@@ -276,11 +279,11 @@
     }
   }
 
-  function scheduleTrack(melody, startBeat, beatMs) {
+  function scheduleTrack(melody, startBeat, beatMs, pitchOffset = 0) {
     let t = startBeat * beatMs;
     melody.forEach(([semi, dur]) => {
       const noteSeconds = (dur * beatMs) / 1000;
-      const id = setTimeout(() => playSemitone(semi + state.demoPitch, noteSeconds), t);
+      const id = setTimeout(() => playSemitone(semi + pitchOffset + state.demoPitch, noteSeconds), t);
       demoTimeouts.push(id);
       t += dur * beatMs;
     });
@@ -296,7 +299,7 @@
   function scheduleDemoLoop() {
     const beatMs = 60000 / state.tempo;
     scheduleTrack(MELODY_1, 0, beatMs);
-    scheduleTrack(MELODY_2, MELODY_2_START_BEAT, beatMs);
+    scheduleTrack(MELODY_2, MELODY_2_START_BEAT, beatMs, MELODY_2_PITCH_OFFSET);
     scheduleSnare(beatMs);
 
     const loopId = setTimeout(() => {
