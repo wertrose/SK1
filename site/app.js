@@ -193,6 +193,23 @@
     return trimmed;
   }
 
+  // Short confirmation beep (not the sample itself) so it's audible even if
+  // the recorded sound is quiet, cueing that the recording has ended.
+  function playRecordingCompleteBeep() {
+    const ctx = ensureAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.2, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  }
+
   async function onRecordingStopped() {
     clearTimeout(recTimer);
     if (mediaStream) mediaStream.getTracks().forEach((t) => t.stop());
@@ -209,6 +226,7 @@
       state.isRecording = false;
       state.hasSample = true;
       state.statusText = 'SAMPLE READY';
+      playRecordingCompleteBeep();
     } catch (err) {
       state.isRecording = false;
       state.hasSample = false;
