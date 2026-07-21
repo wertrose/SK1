@@ -72,8 +72,7 @@
   let hihatBuffer = null;
   let dingBuffer = null;
 
-  // Standing in for the source recording's sleigh bells: a recorded hi-hat hit
-  // (loaded once and trimmed to its actual sound) instead of synthesized noise.
+  // Hihat (loaded once and trimmed to its actual sound) instead of synthesized noise.
   async function loadPercussionSamples() {
     const ctx = ensureAudioCtx();
     try {
