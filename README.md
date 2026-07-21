@@ -53,9 +53,8 @@ python3 -m http.server 8000
 ```
 site/                   the deployed static site (index.html, style.css, app.js)
 .github/workflows/      GitHub Pages deploy workflow
-project/, chats/        original Claude Design handoff bundle (design source, not deployed)
+project/                original Claude Design handoff (design source, not deployed)
 ```
 
-`project/` and `chats/` are kept for provenance — they're the original design
-prototype and the conversation that shaped it — but are not part of the published
-site.
+`project/` is kept for provenance — it's the original design prototype — but is
+not part of the published site.

@@ -92,16 +92,18 @@
     }
   }
 
-  function playBuffer(buffer) {
+  function playBuffer(buffer, gainValue = 1) {
     if (!buffer) return;
     const ctx = ensureAudioCtx();
     const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
     src.buffer = buffer;
-    src.connect(ctx.destination);
+    gain.gain.value = gainValue;
+    src.connect(gain).connect(ctx.destination);
     src.start(ctx.currentTime);
   }
 
-  function playHihat() { playBuffer(hihatBuffer); }
+  function playHihat() { playBuffer(hihatBuffer, 0.4); }
 
   // ---------- Recording ----------
 
@@ -204,7 +206,7 @@
 
   // Confirmation ding (not the sample itself) so it's audible even if the
   // recorded sound is quiet, cueing that the recording has ended.
-  function playRecordingCompleteBeep() { playBuffer(dingBuffer); }
+  function playRecordingCompleteBeep() { playBuffer(dingBuffer, 1.4); }
 
   async function onRecordingStopped() {
     clearTimeout(recTimer);
