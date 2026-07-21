@@ -69,30 +69,39 @@
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-  let snareBuffer = null;
+  let hihatBuffer = null;
+  let dingBuffer = null;
 
-  // Standing in for the source recording's sleigh bells: a recorded snare hit
+  // Standing in for the source recording's sleigh bells: a recorded hi-hat hit
   // (loaded once and trimmed to its actual sound) instead of synthesized noise.
-  async function loadSnareSample() {
+  async function loadPercussionSamples() {
+    const ctx = ensureAudioCtx();
     try {
-      const ctx = ensureAudioCtx();
-      const resp = await fetch('snare.mp3');
-      const arrayBuf = await resp.arrayBuffer();
-      const decoded = await ctx.decodeAudioData(arrayBuf);
-      snareBuffer = trimSilence(decoded, ctx);
+      const resp = await fetch('hihat.mp3');
+      const decoded = await ctx.decodeAudioData(await resp.arrayBuffer());
+      hihatBuffer = trimSilence(decoded, ctx);
     } catch (err) {
-      snareBuffer = null;
+      hihatBuffer = null;
+    }
+    try {
+      const resp = await fetch('ding.mp3');
+      const decoded = await ctx.decodeAudioData(await resp.arrayBuffer());
+      dingBuffer = trimSilence(decoded, ctx);
+    } catch (err) {
+      dingBuffer = null;
     }
   }
 
-  function playSnare() {
-    if (!snareBuffer) return;
+  function playBuffer(buffer) {
+    if (!buffer) return;
     const ctx = ensureAudioCtx();
     const src = ctx.createBufferSource();
-    src.buffer = snareBuffer;
+    src.buffer = buffer;
     src.connect(ctx.destination);
     src.start(ctx.currentTime);
   }
+
+  function playHihat() { playBuffer(hihatBuffer); }
 
   // ---------- Recording ----------
 
@@ -193,22 +202,9 @@
     return trimmed;
   }
 
-  // Short confirmation beep (not the sample itself) so it's audible even if
-  // the recorded sound is quiet, cueing that the recording has ended.
-  function playRecordingCompleteBeep() {
-    const ctx = ensureAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    osc.type = 'sine';
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.15);
-  }
+  // Confirmation ding (not the sample itself) so it's audible even if the
+  // recorded sound is quiet, cueing that the recording has ended.
+  function playRecordingCompleteBeep() { playBuffer(dingBuffer); }
 
   async function onRecordingStopped() {
     clearTimeout(recTimer);
@@ -304,9 +300,9 @@
     });
   }
 
-  function scheduleSnare(beatMs) {
-    for (let beat = 0; beat < LOOP_BEATS; beat += 4) {
-      const id = setTimeout(playSnare, beat * beatMs);
+  function scheduleHihat(beatMs) {
+    for (let beat = 0; beat < LOOP_BEATS; beat += 2) {
+      const id = setTimeout(playHihat, beat * beatMs);
       demoTimeouts.push(id);
     }
   }
@@ -315,7 +311,7 @@
     const beatMs = 60000 / state.tempo;
     scheduleTrack(MELODY_1, 0, beatMs);
     scheduleTrack(MELODY_2, MELODY_2_START_BEAT, beatMs, MELODY_2_PITCH_OFFSET);
-    scheduleSnare(beatMs);
+    scheduleHihat(beatMs);
 
     const loopId = setTimeout(() => {
       if (state.isPlayingDemo) scheduleDemoLoop();
@@ -420,7 +416,7 @@
 
   function init() {
     buildKeyboard();
-    loadSnareSample();
+    loadPercussionSamples();
 
     document.querySelectorAll('[data-role="sample-btn"]').forEach((el) => {
       el.addEventListener('click', toggleRecord);
