@@ -12,16 +12,14 @@
   const BLACK_SEMI = [1, 3, 6, 8, 10];
   const BLACK_AFTER_WHITE = [0, 1, 3, 4, 5]; // index of white key each black key sits after
 
-  // Violin I melody from a General MIDI score transcription of the Toy Symphony
-  // Allegro (tonic = 0, i.e. C, matching the piece's documented original key),
-  // quantized to beats: [semitone offset from base key, duration in beats]
+  // Violin I melody from a MuseScore MIDI export of the Toy Symphony (tonic = 0,
+  // i.e. C, matching the file's own key signature), quantized to beats:
+  // [semitone offset from base key, duration in beats]
   const MELODY = [
-    [0, 1], [4, 0.5], [2, 0.5], [0, 1], [4, 0.5], [2, 0.5], [7, 0.5], [5, 0.5],
-    [4, 1], [7, 0.5], [5, 0.5], [4, 1], [5, 0.5], [4, 0.5], [2, 0.5], [0, 0.5],
-    [2, 0.5], [4, 0.5], [7, 1], [2, 0.5], [0, 0.5], [11, 0.5], [9, 0.5], [7, 1],
-    [0, 1], [7, 0.5], [5, 0.5], [4, 0.5], [2, 0.5], [4, 1], [0, 1], [0, 1],
-    [4, 0.5], [0, 1], [4, 0.5], [11, 1], [2, 0.5], [11, 1], [2, 0.5], [0, 0.5],
-    [2, 0.5], [4, 0.5], [5, 0.5], [7, 1], [7, 1],
+    [0, 2], [4, 1], [4, 1], [2, 2], [5, 1], [5, 1], [4, 2], [9, 1],
+    [7, 1], [7, 1], [5, 1], [4, 2], [2, 1], [5, 0.5], [4, 0.5], [2, 1],
+    [0, 1], [0, 1], [7, 1], [4, 1], [7, 1], [5, 2], [9, 1], [9, 1],
+    [7, 1], [5, 1], [4, 2], [2, 1], [5, 0.5], [4, 0.5], [2, 1], [0, 1],
   ];
 
   const state = {
