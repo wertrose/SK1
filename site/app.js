@@ -69,32 +69,29 @@
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-  let noiseBuffer = null;
-  function getNoiseBuffer(ctx) {
-    if (!noiseBuffer) {
-      noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
-      const data = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  let snareBuffer = null;
+
+  // Standing in for the source recording's sleigh bells: a recorded snare hit
+  // (loaded once and trimmed to its actual sound) instead of synthesized noise.
+  async function loadSnareSample() {
+    try {
+      const ctx = ensureAudioCtx();
+      const resp = await fetch('snare.mp3');
+      const arrayBuf = await resp.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      snareBuffer = trimSilence(decoded, ctx);
+    } catch (err) {
+      snareBuffer = null;
     }
-    return noiseBuffer;
   }
 
-  // Standing in for the source recording's sleigh bells: a plain synthesized
-  // snare hit (noise burst through a bandpass filter) rather than sampled audio.
   function playSnare() {
+    if (!snareBuffer) return;
     const ctx = ensureAudioCtx();
     const src = ctx.createBufferSource();
-    src.buffer = getNoiseBuffer(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1800;
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-    src.connect(filter).connect(gain).connect(ctx.destination);
-    src.start(now);
-    src.stop(now + 0.11);
+    src.buffer = snareBuffer;
+    src.connect(ctx.destination);
+    src.start(ctx.currentTime);
   }
 
   // ---------- Recording ----------
@@ -290,7 +287,7 @@
   }
 
   function scheduleSnare(beatMs) {
-    for (let beat = 0; beat < LOOP_BEATS; beat++) {
+    for (let beat = 0; beat < LOOP_BEATS; beat += 4) {
       const id = setTimeout(playSnare, beat * beatMs);
       demoTimeouts.push(id);
     }
@@ -405,6 +402,7 @@
 
   function init() {
     buildKeyboard();
+    loadSnareSample();
 
     document.querySelectorAll('[data-role="sample-btn"]').forEach((el) => {
       el.addEventListener('click', toggleRecord);
