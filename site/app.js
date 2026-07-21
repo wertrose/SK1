@@ -2,7 +2,7 @@
   'use strict';
 
   const MAX_SAMPLE_SECONDS = 1.4;
-  const DEFAULT_TEMPO = 160;
+  const DEFAULT_TEMPO = 120;
   const TEMPO_MIN = 60;
   const TEMPO_MAX = 260;
   const TEMPO_STEP = 5;
