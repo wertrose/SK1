@@ -12,14 +12,31 @@
   const BLACK_SEMI = [1, 3, 6, 8, 10];
   const BLACK_AFTER_WHITE = [0, 1, 3, 4, 5]; // index of white key each black key sits after
 
-  // Violin I melody from a MuseScore MIDI export of the Toy Symphony (tonic = 0,
-  // i.e. C, matching the file's own key signature), quantized to beats:
-  // [semitone offset from base key, duration in beats]
-  const MELODY = [
-    [0, 2], [4, 1], [4, 1], [2, 2], [5, 1], [5, 1], [4, 2], [9, 1],
-    [7, 1], [7, 1], [5, 1], [4, 2], [2, 1], [5, 0.5], [4, 0.5], [2, 1],
-    [0, 1], [0, 1], [7, 1], [4, 1], [7, 1], [5, 2], [9, 1], [9, 1],
-    [7, 1], [5, 1], [4, 2], [2, 1], [5, 0.5], [4, 0.5], [2, 1], [0, 1],
+  // Two-piano MuseScore MIDI export of the Toy Symphony. Both parts share one
+  // pitch reference (C5) so their real octave relationship (Piano 2 enters an
+  // octave-plus lower) carries through: [semitone offset from base key, duration in beats]
+  const LOOP_BEATS = 40;
+
+  const MELODY_1 = [
+    [12, 1], [16, 0.5], [14, 0.5], [12, 1], [19, 0.5], [17, 0.5], [16, 1], [21, 0.5],
+    [19, 0.5], [19, 0.5], [17, 0.5], [16, 1], [14, 0.5], [17, 0.25], [14, 0.25], [12, 0.5],
+    [11, 0.5], [12, 1], [16, 0.5], [14, 0.5], [12, 1], [19, 0.5], [17, 0.5], [16, 1],
+    [21, 0.5], [19, 0.5], [19, 0.5], [17, 0.5], [16, 1], [14, 0.5], [17, 0.25], [14, 0.25],
+    [12, 0.5], [11, 0.5], [12, 1], [16, 0.5], [12, 1], [16, 0.5], [12, 1], [21, 0.5],
+    [19, 0.5], [19, 0.5], [17, 0.5], [16, 1], [14, 0.5], [17, 0.25], [14, 0.25], [12, 0.5],
+    [11, 0.5], [12, 1], [19, 0.5], [16, 1], [19, 0.5], [16, 1], [12, 0.25], [14, 0.25],
+    [16, 0.25], [18, 0.25], [19, 1], [19, 0.25], [18, 0.25], [19, 0.25], [21, 0.25], [23, 1],
+    [23, 0.25], [21, 0.25], [23, 0.25], [24, 0.25], [26, 0.5],
+  ];
+
+  // Piano 2 enters partway through Piano 1's phrase, like the source recording.
+  const MELODY_2_START_BEAT = 20.5;
+  const MELODY_2 = [
+    [-5, 0.5], [-8, 1], [-5, 0.5], [-8, 1], [-3, 0.5], [-5, 0.5], [-5, 0.5], [-7, 0.5],
+    [-8, 1], [-3, 0.5], [-3, 0.5], [-5, 0.5], [-7, 0.5], [-5, 0.5], [-5, 0.5], [-5, 0.5],
+    [-5, 0.5], [-5, 0.5], [-5, 0.5], [-5, 0.5], [-5, 0.5], [-5, 0.5], [-5, 0.5], [-12, 0.25],
+    [-10, 0.25], [-8, 0.25], [-6, 0.25], [-5, 1], [-5, 0.25], [-6, 0.25], [-5, 0.25], [-3, 0.25],
+    [-1, 1], [-1, 0.25], [-3, 0.25], [-1, 0.25], [0, 0.25], [2, 0.5],
   ];
 
   const state = {
@@ -48,6 +65,34 @@
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  let noiseBuffer = null;
+  function getNoiseBuffer(ctx) {
+    if (!noiseBuffer) {
+      noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuffer;
+  }
+
+  // Standing in for the source recording's sleigh bells: a plain synthesized
+  // snare hit (noise burst through a bandpass filter) rather than sampled audio.
+  function playSnare() {
+    const ctx = ensureAudioCtx();
+    const src = ctx.createBufferSource();
+    src.buffer = getNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800;
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.11);
+  }
 
   // ---------- Recording ----------
 
@@ -231,18 +276,32 @@
     }
   }
 
-  function scheduleMelodyLoop() {
-    const beatMs = 60000 / state.tempo;
-    let t = 0;
-    MELODY.forEach(([semi, dur]) => {
+  function scheduleTrack(melody, startBeat, beatMs) {
+    let t = startBeat * beatMs;
+    melody.forEach(([semi, dur]) => {
       const noteSeconds = (dur * beatMs) / 1000;
       const id = setTimeout(() => playSemitone(semi + state.demoPitch, noteSeconds), t);
       demoTimeouts.push(id);
       t += dur * beatMs;
     });
+  }
+
+  function scheduleSnare(beatMs) {
+    for (let beat = 0; beat < LOOP_BEATS; beat++) {
+      const id = setTimeout(playSnare, beat * beatMs);
+      demoTimeouts.push(id);
+    }
+  }
+
+  function scheduleDemoLoop() {
+    const beatMs = 60000 / state.tempo;
+    scheduleTrack(MELODY_1, 0, beatMs);
+    scheduleTrack(MELODY_2, MELODY_2_START_BEAT, beatMs);
+    scheduleSnare(beatMs);
+
     const loopId = setTimeout(() => {
-      if (state.isPlayingDemo) scheduleMelodyLoop();
-    }, t + 150);
+      if (state.isPlayingDemo) scheduleDemoLoop();
+    }, LOOP_BEATS * beatMs + 150);
     demoTimeouts.push(loopId);
   }
 
@@ -254,7 +313,7 @@
     state.statusText = 'PLAYING DEMO';
     render();
 
-    scheduleMelodyLoop();
+    scheduleDemoLoop();
   }
 
   function bumpTempo(delta) {
